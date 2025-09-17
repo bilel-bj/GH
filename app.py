@@ -44,13 +44,13 @@ st.markdown("""
 # Initialize session state
 if 'data_loaded' not in st.session_state:
     st.session_state.data_loaded = False
-if 'predictions' not in st.session_state:
-    st.session_state.predictions = None
+if 'ons' not in st.session_state:
+    st.session_state.ons = None
 if 'risk_assessment' not in st.session_state:
     st.session_state.risk_assessment = None
 
 # Title and description
-st.title(" Green Hydrogen Electrolyzer Predictive Maintenance System")
+st.title(" Green Hydrogen Electrolyzer ve Maintenance System")
 st.markdown("**ACWA Power Challenge Solution** | Powered by Nixtla TimeGPT & Advanced Analytics")
 
 # Sidebar configuration
@@ -62,11 +62,11 @@ with st.sidebar:
     
     # Model selection
     model_type = st.selectbox(
-        "Select Prediction Model",
+        "Select on Model",
         ["Nixtla TimeGPT", "Statistical Ensemble", "XGBoost ML", "Hybrid Approach"]
     )
     
-    # Prediction horizon
+    # on horizon
     forecast_horizon = st.slider(
         "Forecast Horizon (hours)",
         min_value=24,
@@ -192,9 +192,9 @@ def calculate_risk_metrics(df):
     
     return risk_scores
 
-# Function to generate predictions (simulated Nixtla TimeGPT)
-def generate_predictions(df, horizon):
-    """Simulate Nixtla TimeGPT predictions"""
+# Function to generate ons (simulated Nixtla TimeGPT)
+def generate_ons(df, horizon):
+    """Simulate Nixtla TimeGPT ons"""
     last_timestamp = df['timestamp'].max()
     future_timestamps = pd.date_range(
         start=last_timestamp + timedelta(hours=1),
@@ -206,22 +206,22 @@ def generate_predictions(df, horizon):
     recent_voltage = df['cell_voltage'].tail(168).values
     trend = np.polyfit(range(len(recent_voltage)), recent_voltage, 1)[0]
     
-    # Generate predictions with uncertainty
-    base_prediction = df['cell_voltage'].iloc[-1]
-    predictions = []
+    # Generate ons with uncertainty
+    base_on = df['cell_voltage'].iloc[-1]
+    ons = []
     uncertainties = []
     
     for i in range(horizon):
-        pred = base_prediction + trend * i + np.random.normal(0, 0.01)
+        pred = base_on + trend * i + np.random.normal(0, 0.01)
         uncertainty = 0.02 + 0.001 * i  # Increasing uncertainty
-        predictions.append(pred)
+        ons.append(pred)
         uncertainties.append(uncertainty)
     
     pred_df = pd.DataFrame({
         'timestamp': future_timestamps,
-        'predicted_voltage': predictions,
-        'lower_bound': np.array(predictions) - 1.96 * np.array(uncertainties),
-        'upper_bound': np.array(predictions) + 1.96 * np.array(uncertainties),
+        'predicted_voltage': ons,
+        'lower_bound': np.array(ons) - 1.96 * np.array(uncertainties),
+        'upper_bound': np.array(ons) + 1.96 * np.array(uncertainties),
         'uncertainty': uncertainties
     })
     
@@ -238,7 +238,7 @@ def generate_predictions(df, horizon):
 # Main application tabs
 tab1, tab2, tab3, tab4 = st.tabs([
     "📈 Real-time Monitoring",
-    "⚠️ Failure Prediction",
+    "⚠️ Failure on",
     "⚠️ Risk Assessment",
     "📋 Maintenance Planning"
 ])
@@ -419,9 +419,9 @@ if st.session_state.data_loaded or uploaded_file:
             fig.update_layout(height=250, margin=dict(l=0, r=0, t=0, b=0))
             st.plotly_chart(fig, use_container_width=True)
     
-    # Tab 2: Failure Prediction
+    # Tab 2: Failure on
     with tab2:
-        st.markdown("### 🔮 Predictive Analytics - Equipment Failure Forecast")
+        st.markdown("###  Predictive Analytics - Equipment Failure Forecast")
         
         # Generate predictions
         if st.button("Generate Predictions", type="primary"):
