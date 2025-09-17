@@ -2,6 +2,60 @@
 Green Hydrogen Electrolyzer Predictive Maintenance System
 ACWA Power Challenge Solution using Nixtla TimeGPT
 """
+# --- at top of file ---
+import pandas as pd
+import io
+import streamlit as st
+
+@st.cache_data(show_spinner=False)
+def load_table(uploaded):
+    if uploaded is None:
+        return None
+
+    # Try by extension first
+    name = (uploaded.name or "").lower()
+
+    try:
+        if name.endswith((".xlsx", ".xlsm")):
+            return pd.read_excel(uploaded, engine="openpyxl")
+        elif name.endswith(".xls"):
+            return pd.read_excel(uploaded, engine="xlrd")
+        elif name.endswith(".csv"):
+            return pd.read_csv(uploaded)
+    except Exception as e:
+        st.warning(f"Tried by extension but failed: {e}. Falling back to sniffing.")
+
+    # Fallback: sniff by content
+    uploaded.seek(0)
+    raw = uploaded.read()
+
+    # try as Excel first
+    try:
+        df = pd.read_excel(io.BytesIO(raw), engine="openpyxl")
+        return df
+    except Exception:
+        pass
+
+    # try as CSV
+    try:
+        uploaded.seek(0)
+        return pd.read_csv(io.BytesIO(raw))
+    except Exception as e:
+        raise ValueError(
+            "Could not parse the uploaded file as Excel or CSV. "
+            f"Original error: {e}"
+        )
+
+# --- in your main() where you had read_excel(uploaded_file) ---
+uploaded_file = st.file_uploader(
+    "Upload electrolyzer data (.xlsx, .xls, .csv)", 
+    type=["xlsx","xls","csv"]
+)
+df = load_table(uploaded_file)
+
+if df is not None:
+    st.success(f"Loaded {df.shape[0]:,} rows × {df.shape[1]:,} columns.")
+    st.dataframe(df.head(50))
 
 import streamlit as st
 import pandas as pd
@@ -44,29 +98,29 @@ st.markdown("""
 # Initialize session state
 if 'data_loaded' not in st.session_state:
     st.session_state.data_loaded = False
-if 'ons' not in st.session_state:
-    st.session_state.ons = None
+if 'predictions' not in st.session_state:
+    st.session_state.predictions = None
 if 'risk_assessment' not in st.session_state:
     st.session_state.risk_assessment = None
 
 # Title and description
-st.title(" Green Hydrogen Electrolyzer ve Maintenance System")
+st.title(" Green Hydrogen Electrolyzer Predictive Maintenance System")
 st.markdown("**ACWA Power Challenge Solution** | Powered by Nixtla TimeGPT & Advanced Analytics")
 
 # Sidebar configuration
 with st.sidebar:
-    st.image("https://via.placeholder.com/300x100/1c83e1/ffffff?text=ACWA+Power", use_column_width=True)
+    st.image("https://via.placeholder.com/300x100/1c83e1/ffffff?text=ACWA+Power", use_container_width=True)
     st.markdown("---")
     
     st.markdown("### ⚙️ System Configuration")
     
     # Model selection
     model_type = st.selectbox(
-        "Select on Model",
+        "Select Prediction Model",
         ["Nixtla TimeGPT", "Statistical Ensemble", "XGBoost ML", "Hybrid Approach"]
     )
     
-    # on horizon
+    # Prediction horizon
     forecast_horizon = st.slider(
         "Forecast Horizon (hours)",
         min_value=24,
@@ -192,9 +246,9 @@ def calculate_risk_metrics(df):
     
     return risk_scores
 
-# Function to generate ons (simulated Nixtla TimeGPT)
-def generate_ons(df, horizon):
-    """Simulate Nixtla TimeGPT ons"""
+# Function to generate predictions (simulated Nixtla TimeGPT)
+def generate_predictions(df, horizon):
+    """Simulate Nixtla TimeGPT predictions"""
     last_timestamp = df['timestamp'].max()
     future_timestamps = pd.date_range(
         start=last_timestamp + timedelta(hours=1),
@@ -206,22 +260,22 @@ def generate_ons(df, horizon):
     recent_voltage = df['cell_voltage'].tail(168).values
     trend = np.polyfit(range(len(recent_voltage)), recent_voltage, 1)[0]
     
-    # Generate ons with uncertainty
-    base_on = df['cell_voltage'].iloc[-1]
-    ons = []
+    # Generate predictions with uncertainty
+    base_prediction = df['cell_voltage'].iloc[-1]
+    predictions = []
     uncertainties = []
     
     for i in range(horizon):
-        pred = base_on + trend * i + np.random.normal(0, 0.01)
+        pred = base_prediction + trend * i + np.random.normal(0, 0.01)
         uncertainty = 0.02 + 0.001 * i  # Increasing uncertainty
-        ons.append(pred)
+        predictions.append(pred)
         uncertainties.append(uncertainty)
     
     pred_df = pd.DataFrame({
         'timestamp': future_timestamps,
-        'predicted_voltage': ons,
-        'lower_bound': np.array(ons) - 1.96 * np.array(uncertainties),
-        'upper_bound': np.array(ons) + 1.96 * np.array(uncertainties),
+        'predicted_voltage': predictions,
+        'lower_bound': np.array(predictions) - 1.96 * np.array(uncertainties),
+        'upper_bound': np.array(predictions) + 1.96 * np.array(uncertainties),
         'uncertainty': uncertainties
     })
     
@@ -238,7 +292,7 @@ def generate_ons(df, horizon):
 # Main application tabs
 tab1, tab2, tab3, tab4 = st.tabs([
     "📈 Real-time Monitoring",
-    "⚠️ Failure on",
+    "⚠️ Failure Prediction",
     "⚠️ Risk Assessment",
     "📋 Maintenance Planning"
 ])
@@ -419,9 +473,9 @@ if st.session_state.data_loaded or uploaded_file:
             fig.update_layout(height=250, margin=dict(l=0, r=0, t=0, b=0))
             st.plotly_chart(fig, use_container_width=True)
     
-    # Tab 2: Failure on
+    # Tab 2: Failure Prediction
     with tab2:
-        st.markdown("###  Predictive Analytics - Equipment Failure Forecast")
+        st.markdown("### Predictive Analytics - Equipment Failure Forecast")
         
         # Generate predictions
         if st.button("Generate Predictions", type="primary"):
@@ -920,7 +974,7 @@ else:
     
     with col1:
         st.markdown("""
-        ** Failure Prediction**
+        ** ⚠️Failure Prediction**
         - AI-powered voltage degradation forecasting
         - Component-wise failure risk assessment
         - 24-168 hour prediction horizon
