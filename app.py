@@ -50,7 +50,7 @@ if 'risk_assessment' not in st.session_state:
     st.session_state.risk_assessment = None
 
 # Title and description
-st.title("🔮 Green Hydrogen Electrolyzer Predictive Maintenance System")
+st.title(" Green Hydrogen Electrolyzer Predictive Maintenance System")
 st.markdown("**ACWA Power Challenge Solution** | Powered by Nixtla TimeGPT & Advanced Analytics")
 
 # Sidebar configuration
@@ -238,7 +238,7 @@ def generate_predictions(df, horizon):
 # Main application tabs
 tab1, tab2, tab3, tab4 = st.tabs([
     "📈 Real-time Monitoring",
-    "🔮 Failure Prediction",
+    "⚠️Failure Prediction",
     "⚠️ Risk Assessment",
     "📋 Maintenance Planning"
 ])
@@ -421,7 +421,7 @@ if st.session_state.data_loaded or uploaded_file:
     
     # Tab 2: Failure Prediction
     with tab2:
-        st.markdown("### 🔮 Predictive Analytics - Equipment Failure Forecast")
+        st.markdown("###  Predictive Analytics - Equipment Failure Forecast")
         
         # Generate predictions
         if st.button("Generate Predictions", type="primary"):
